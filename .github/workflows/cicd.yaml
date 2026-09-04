@@ -45,9 +45,7 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t cycle-website:latest .
-
-
-  push:
+    push:
     name: Push Docker Image
     needs: build
     if: github.event_name == 'push'
@@ -68,9 +66,9 @@ jobs:
       - name: Build Docker image
         run: |
           docker build \
-            -t ghcr.io/${{ github.repository_owner }}/cycle-website:latest \
+            -t ghcr.io/varshitha2303/cycle-website:latest \
             .
 
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ github.repository_owner }}/cycle-website:latest
+          docker push ghcr.io/varshitha2303/cycle-website:latest
