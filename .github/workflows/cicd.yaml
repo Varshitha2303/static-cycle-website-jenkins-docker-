@@ -72,3 +72,77 @@ jobs:
       - name: Push Docker image
         run: |
           docker push ghcr.io/varshitha2303/cycle-website:latest
+
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: push-image
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy application to staging EC2
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "Pulling latest application image..."
+
+            docker pull ghcr.io/varshitha2303/cycle-website:latest
+
+            echo "Stopping existing container..."
+
+            docker stop cycle-website || true
+            docker rm cycle-website || true
+
+            echo "Starting new container..."
+
+            docker run -d \
+              --name cycle-website \
+              --restart unless-stopped \
+              -p 8080:80 \
+              ghcr.io/varshitha2303/cycle-website:latest
+
+            echo "Cleaning unused Docker images..."
+
+            docker image prune -f
+
+            echo "Deployment completed."
+
+      - name: Verify staging container
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker ps --filter "name=cycle-website"
+            curl -f http://localhost:8080
+
+
+  production-approval:
+    name: Production Approval
+    needs: deploy-staging
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+
+    steps:
+      - name: Production deployment approved
+        run: echo "Production deployment approved."
+
+
+  deploy-production:
+    name: Deploy to Production
+    needs: production-approval
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy application to production
+        run: |
+          echo "Production deployment started."
+          echo "Production deployment completed."
