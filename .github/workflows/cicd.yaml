@@ -128,7 +128,7 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     environment:
-      name: production
+      name: production1
 
     steps:
       - name: Production deployment approved
@@ -140,7 +140,7 @@ jobs:
     runs-on: ubuntu-latest
 
     environment:
-      name: production
+      name: production1
 
     steps:
       - name: Deploy application to production EC2
