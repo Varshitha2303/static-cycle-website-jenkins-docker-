@@ -133,16 +133,48 @@ jobs:
     steps:
       - name: Production deployment approved
         run: echo "Production deployment approved."
-
-
   deploy-production:
     name: Deploy to Production
-    needs: production-approval
+    needs: deploy-staging
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
+    environment:
+      name: production
+
     steps:
-      - name: Deploy application to production
-        run: |
-          echo "Production deployment started."
-          echo "Production deployment completed."
+      - name: Deploy application to production EC2
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.PRODUCTIONHOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2KEY }}
+          script: |
+            echo "Pulling latest application image..."
+
+            docker pull ghcr.io/varshitha2303/cycle-website:latest
+
+            echo "Stopping existing container..."
+
+            docker stop cycle-website || true
+            docker rm cycle-website || true
+
+            echo "Starting new container..."
+
+            docker run -d \
+              --name cycle-website \
+              --restart unless-stopped \
+              -p 8080:80 \
+              ghcr.io/varshitha2303/cycle-website:latest
+
+            echo "Deployment completed."
+
+      - name: Verify production deployment
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.PRODUCTIONHOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2KEY }}
+          script: |
+            docker ps --filter "name=cycle-website"
+            curl -f http://localhost:8080
