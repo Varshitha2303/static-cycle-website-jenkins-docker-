@@ -3,11 +3,11 @@ name: Cycle Website CI/CD
 on:
   pull_request:
     branches:
-      - master
+      - main
 
   push:
     branches:
-      - master
+      - main
 
 permissions:
   contents: read
@@ -23,20 +23,19 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Build Docker image for testing
-        run: docker build -t cycle-website:test .
-
-      - name: Validate website files
+      - name: Check website files
         run: |
           test -f index.html
           test -f Dockerfile
+
+      - name: Build Docker image for testing
+        run: docker build -t cycle-website:test .
 
 
   build:
     name: Build Docker Image
     needs: test
     if: github.event_name == 'push'
-
     runs-on: ubuntu-latest
 
     steps:
@@ -45,11 +44,12 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t cycle-website:latest .
-    push:
+
+
+  push-image:
     name: Push Docker Image
     needs: build
     if: github.event_name == 'push'
-
     runs-on: ubuntu-latest
 
     steps:
